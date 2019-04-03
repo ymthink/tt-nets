@@ -69,7 +69,7 @@ class ConvNet(Net):
                 label_samples = y_train[i*batch_size:(i+1)*batch_size]
                 _, loss = sess.run([opt, self.loss], feed_dict={self.images:img_samples, self.labels:label_samples})
                 if i % 100 == 0:
-                    print('epoch {}, step {} / {},'.format(epoch, i, n_step),'loss:', loss)
+                    print('epoch {} / {}, step {} / {},'.format(epoch, epochs, i, n_step),'loss:', loss)
             W1 = sess.run('W1:0')
             W2 = sess.run('W2:0')
             np.save('W_init', [W1, W2])

@@ -24,4 +24,4 @@ class Net(object):
             label_samples = y_test[i * batch_size:(i + 1) * batch_size]
             cur_pred = np.sum(sess.run(pred, feed_dict={images:img_samples, labels:label_samples}))
             sum_pred += cur_pred
-        print('Accuracy:', sum_pred / (n_step * batch_size))
+        print('Accuracy: {:.5f}'.format(sum_pred / (n_step * batch_size)))

@@ -9,9 +9,9 @@ import t3f
 from keras.datasets import cifar10
 from keras.utils import to_categorical
 import sys
-sys.path.append('../')
-from layers import *
-from .net import Net
+sys.path.append('../../')
+from t3fnets.layers import *
+from t3fnets.net import Net
 
 
 class TTConvNet(Net):
@@ -27,8 +27,8 @@ class TTConvNet(Net):
         h = ttconv2d(
             h,
             in_ch_modes=[4, 4, 4],
-            out_ch_modes=[4, 8, 4],
-            tt_rank=25,
+            out_ch_modes=[4, 4, 4, 2],
+            tt_rank=19,
             filter_size=5,
             stride=1,
             layer_id=1,
@@ -39,9 +39,9 @@ class TTConvNet(Net):
         h = tf.nn.max_pool(h, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
         h = ttconv2d(
             h,
-            in_ch_modes=[4, 8, 4],
-            out_ch_modes=[4, 8, 4],
-            tt_rank=25,
+            in_ch_modes=[4, 4, 4, 2],
+            out_ch_modes=[4, 4, 4, 2],
+            tt_rank=19,
             filter_size=3,
             stride=1,
             layer_id=2,
@@ -79,14 +79,14 @@ class TTConvNet(Net):
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         for epoch in range(epochs):
-            self.eval(self.images, self.labels, self.pred, sess, x_test, y_test)
+            self.eval(self.images, self.labels, self.pred, sess, x_test, y_test, batch_size)
             for i in range(n_step):
                 img_samples = x_train[i*batch_size:(i+1)*batch_size]
                 label_samples = y_train[i*batch_size:(i+1)*batch_size]
                 _, loss = sess.run([opt, self.loss], feed_dict={self.images:img_samples, self.labels:label_samples})
                 if i % 100 == 0:
-                    print('epoch {}, step {} / {},'.format(epoch, i, n_step),'loss:', loss)
-        self.eval(self.images, self.labels, self.pred, sess, x_test, y_test)
+                    print('epoch {} / {}, step {} / {},'.format(epoch, epochs, i, n_step),'loss:', loss)
+        self.eval(self.images, self.labels, self.pred, sess, x_test, y_test, batch_size)
 
 
 if __name__ == '__main__':
