@@ -19,6 +19,7 @@ class TTConvNet:
         self.images = tf.placeholder(dtype=tf.float32, shape=(None, img_shape[0], img_shape[1], img_shape[2]))
         self.labels = tf.placeholder(dtype=tf.int32, shape=(None, ))
         Ws = np.load('W_init.npy')
+        print('INFO: The trained conv weights have been loaded.')
         h = conv2d(self.images, out_ch=64, filter_size=5, stride=1, layer_id=0)
         h = batch_norm(h)
         h = tf.nn.relu(h)
@@ -55,7 +56,7 @@ class TTConvNet:
         correct_flags = tf.nn.in_top_k(self.logits, self.labels, 1)
         self.eval = tf.cast(correct_flags, tf.int32)
 
-    def train(self, epochs=10, batch_size=32, lr=0.003):
+    def train(self, epochs=10, batch_size=32, lr=0.001):
         (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 
         x_train = x_train / 127.5 - 1.0
@@ -67,7 +68,6 @@ class TTConvNet:
         y_test = np.squeeze(y_test)
         n_sample = len(x_train)
         n_step = n_sample // batch_size
-
 
         opt = tf.train.AdamOptimizer(
             learning_rate=lr,
@@ -85,7 +85,7 @@ class TTConvNet:
                 label_samples = y_train[i*batch_size:(i+1)*batch_size]
                 _, loss = sess.run([opt, self.loss], feed_dict={self.images:img_samples, self.labels:label_samples})
                 if i % 100 == 0:
-                    print('step {} / {},'.format(i, n_step),'loss:', loss)
+                    print('epoch {}, step {} / {},'.format(epoch, i, n_step),'loss:', loss)
         eval = sess.run(self.eval, feed_dict={self.images:x_test[0:200], self.labels:y_test[0:200]})
         print('evaluation acc:', np.sum(eval) / 200)
 

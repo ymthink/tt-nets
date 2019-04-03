@@ -72,10 +72,11 @@ class ConvNet:
                 label_samples = y_train[i*batch_size:(i+1)*batch_size]
                 _, loss = sess.run([opt, self.loss], feed_dict={self.images:img_samples, self.labels:label_samples})
                 if i % 100 == 0:
-                    print('step {} / {},'.format(i, n_step),'loss:', loss)
+                    print('epoch {}, step {} / {},'.format(epoch, i, n_step),'loss:', loss)
             W1 = sess.run('W1:0')
             W2 = sess.run('W2:0')
             np.save('W_init', [W1, W2])
+            print('INFO: The weights of layer_1 and layer_2 have been saved.')
         eval = sess.run(self.eval, feed_dict={self.images:x_test[0:100], self.labels:y_test[0:100]})
         print('evaluation acc:', np.sum(eval) / 100)
 
