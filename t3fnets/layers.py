@@ -7,8 +7,6 @@
 import numpy as np
 import tensorflow as tf
 import t3f
-from tqdm import tqdm
-import sys
 
 
 def xavier_init(size):

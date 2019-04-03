@@ -6,13 +6,10 @@
 
 import numpy as np
 import tensorflow as tf
-import t3f
-from keras.datasets import cifar10
-from keras.utils import to_categorical
 import sys
 
 sys.path.append('../')
-from layers import *
+from .layers import *
 
 
 class Net(object):

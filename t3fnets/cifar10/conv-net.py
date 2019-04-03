@@ -8,11 +8,10 @@ import numpy as np
 import tensorflow as tf
 import t3f
 from keras.datasets import cifar10
-from keras.utils import to_categorical
 import sys
 sys.path.append('../')
-from layers import *
-from net import Net
+from t3fnets.layers import *
+from t3fnets.net import *
 
 
 class ConvNet(Net):
@@ -45,8 +44,6 @@ class ConvNet(Net):
         x_train = x_train / 127.5 - 1.0
         x_test = x_test / 127.5 - 1.0
 
-        # y_train = to_categorical(y_train, num_classes=10)
-        # y_test = to_categorical(y_test, num_classes=10)
         y_train = np.squeeze(y_train)
         y_test = np.squeeze(y_test)
         n_sample = len(x_train)
