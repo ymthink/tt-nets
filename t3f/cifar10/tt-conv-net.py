@@ -25,7 +25,7 @@ class TTConvNet:
             h,
             in_ch_modes=[4, 4, 4],
             out_ch_modes=[4, 8, 4],
-            tt_rank=27,
+            tt_rank=21,
             filter_size=5,
             stride=1,
             layer_id=1
@@ -37,7 +37,7 @@ class TTConvNet:
             h,
             in_ch_modes=[4, 8, 4],
             out_ch_modes=[4, 8, 4],
-            tt_rank=27,
+            tt_rank=23,
             filter_size=3,
             stride=1,
             layer_id=2
