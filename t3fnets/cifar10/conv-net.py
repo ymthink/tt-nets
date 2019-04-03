@@ -9,7 +9,7 @@ import tensorflow as tf
 import t3f
 from keras.datasets import cifar10
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 from t3fnets.layers import *
 from t3fnets.net import *
 
