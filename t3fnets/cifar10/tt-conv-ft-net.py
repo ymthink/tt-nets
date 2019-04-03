@@ -91,5 +91,5 @@ class TTConvNet(Net):
 
 if __name__ == '__main__':
     net = TTConvNet(img_shape=(32, 32, 3), num_class=10)
-    net.train()
+    net.train(epochs=50)
 
