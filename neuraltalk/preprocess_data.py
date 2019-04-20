@@ -29,7 +29,8 @@ def load_vocab():
         image_desc = [w.translate(table) for w in image_desc]
         image_desc = [word for word in image_desc if len(word) > 1]
         image_desc = [word for word in image_desc if word.isalpha()]
-        desc = ' '.join(image_desc)
+        # desc = ' '.join(image_desc)
+        desc = image_desc
         descriptions[image_id].append(desc)
         vocab_count.update(image_desc)
 
@@ -52,7 +53,8 @@ def load_data(filename, word2idx, descriptions):
         image_id = line.split('.')[0]
         sents = []
         for desc in descriptions[image_id]:
-            x = [word2idx.get(word, 1) for word in (desc + ' <E>').split()]
+            x = [word2idx.get(word, 1) for word in desc]
+            x.append(word2idx['<E>'])
             if len(x) <= hp.max_len:
                 sents.append(x)
 
@@ -82,9 +84,9 @@ def save_image_feats(id_list, filename):
 
 if __name__ == '__main__':
     word2idx, idx2word, descriptions = load_vocab()
-    # id_list, X2_list = load_data(hp.train_images_file, word2idx, descriptions)
-    # save_image_feats(id_list, hp.train_feats_file)
-    test_id_list, test_X2_list = load_data(hp.test_images_file, word2idx, descriptions)
+    train_id_list, _ = load_data(hp.train_images_file, word2idx, descriptions)
+    save_image_feats(train_id_list, hp.train_feats_file)
+    test_id_list, _ = load_data(hp.test_images_file, word2idx, descriptions)
     save_image_feats(test_id_list, hp.test_feats_file)
 
 

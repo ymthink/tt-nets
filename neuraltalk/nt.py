@@ -51,6 +51,7 @@ class ValidationCallback(Callback):
         print('ground truth:', self.descriptions[image_id])
         print('model output:', sent)
         self.model.save_weights('model_weights.h5')
+        print('INFO: model_weights have been saved.')
 
 
 class NeuralTalk():
@@ -79,12 +80,13 @@ class NeuralTalk():
     def eval(self):
         self.model.load_weights('model_weights.h5')
         test_id_list, test_X2_list = load_data(hp.test_images_file, self.word2idx, self.descriptions)
-        score = 0
+        test_feats = np.load(hp.test_feats_file)
+        sum_score = 0
         for idx in range(len(test_id_list)):
             image_id = test_id_list[idx]
             references = self.descriptions[image_id]
             candidate = []
-            x1 = self.feats[idx-1:idx]
+            x1 = test_feats[idx:idx+1]
             x2 = np.zeros([1, hp.max_len])
             y_idx = 0
             for i in range(hp.max_len):
@@ -96,9 +98,11 @@ class NeuralTalk():
                     break
                 candidate.append(word)
 
-            score += sentence_bleu(references, candidate, weights=[1, 0, 0, 0])
+            score = sentence_bleu(references, candidate, weights=[1, 0, 0, 0])
+            print('{} BLEU1 {:.4f}'.format(image_id, score))
+            sum_score += score
 
-        print('INFO: BLEU = {:.4f}'.format(score/len(test_id_list)))
+        print('INFO: BLEU = {:.4f}'.format(sum_score/len(test_id_list)))
 
     @staticmethod
     def generator(X2_list, vocab_size, feats):
@@ -148,8 +152,8 @@ class NeuralTalk():
 
 if __name__ == '__main__':
     nt = NeuralTalk(is_TT=True)
-    # nt.train()
-    nt.eval()
+    nt.train()
+    # nt.eval()
 
 
 
