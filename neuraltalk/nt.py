@@ -10,9 +10,15 @@ from keras.models import Model
 from keras.utils import to_categorical
 from keras import optimizers
 from keras.callbacks import Callback
-from preprocess_data import *
-from hyper_parameters import HyperParameters as hp
+from nltk.translate.bleu_score import sentence_bleu
 import keras
+import sys
+
+sys.path.append('../')
+from neuraltalk.preprocess_data import *
+from neuraltalk.hyper_parameters import HyperParameters as hp
+from TTLAYERS.TTRNN import *
+from TTLAYERS.TTFC import *
 
 
 class ValidationCallback(Callback):
@@ -44,22 +50,21 @@ class ValidationCallback(Callback):
         print('image_id:', image_id)
         print('ground truth:', self.descriptions[image_id])
         print('model output:', sent)
+        self.model.save_weights('model_weights.h5')
 
 
 class NeuralTalk():
-    def __init__(self):
+    def __init__(self, is_TT=False):
         self.word2idx, self.idx2word, self.descriptions = load_vocab()
         self.vocab_size = len(self.word2idx)
-        self.model = self.build_model(self.vocab_size)
+        self.model = self.build_model(self.vocab_size, is_TT)
+        self.model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     def train(self):
         train_id_list, train_X2_list = load_data(hp.train_images_file, self.word2idx, self.descriptions)
         test_id_list, test_X2_list = load_data(hp.test_images_file, self.word2idx, self.descriptions)
         train_feats = np.load(hp.train_feats_file)
         test_feats = np.load(hp.test_feats_file)
-        print(test_feats[0].shape)
-        optimizer = optimizers.Adam(lr=1e-3)
-        self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         self.model.summary()
         cnt = 0
         for x2 in train_X2_list:
@@ -70,6 +75,30 @@ class NeuralTalk():
                             steps_per_epoch=steps_per_epoch,
                             epochs=hp.n_epochs,
                             callbacks=[callback])
+
+    def eval(self):
+        self.model.load_weights('model_weights.h5')
+        test_id_list, test_X2_list = load_data(hp.test_images_file, self.word2idx, self.descriptions)
+        score = 0
+        for idx in range(len(test_id_list)):
+            image_id = test_id_list[idx]
+            references = self.descriptions[image_id]
+            candidate = []
+            x1 = self.feats[idx-1:idx]
+            x2 = np.zeros([1, hp.max_len])
+            y_idx = 0
+            for i in range(hp.max_len):
+                x2[0, i] = y_idx
+                y_logit = self.model.predict([x1, x2])
+                y_idx = np.argmax(y_logit)
+                word = self.idx2word[y_idx]
+                if word == '<E>':
+                    break
+                candidate.append(word)
+
+            score += sentence_bleu(references, candidate, weights=[1, 0, 0, 0])
+
+        print('INFO: BLEU = {:.4f}'.format(score/len(test_id_list)))
 
     @staticmethod
     def generator(X2_list, vocab_size, feats):
@@ -94,13 +123,19 @@ class NeuralTalk():
                             Y.clear()
 
     @staticmethod
-    def build_model(vocab_size):
+    def build_model(vocab_size, is_TT=False):
         img_inp = Input(shape=(2048,))
-        img_embedding = Dense(hp.embedding_dim, activation='relu')(img_inp)
+        if is_TT:
+            img_embedding = TT_Dense(tt_input_shape=[4,8,8,8], tt_output_shape=[4,4,4,4], tt_ranks=[1,3,3,3,1], activation='relu', use_bias=True)(img_inp)
+        else:
+            img_embedding = Dense(hp.embedding_dim, activation='relu')(img_inp)
 
         txt_inp = Input(shape=(hp.max_len,))
         txt_embedding = Embedding(vocab_size, hp.embedding_dim, mask_zero=True)(txt_inp)
-        txt_lstm = LSTM(256)(txt_embedding)
+        if is_TT:
+            txt_lstm = TT_LSTM(tt_input_shape=[4,4,4,4], tt_output_shape=[4,4,4,4], tt_ranks=[1,3,3,3,1], use_bias=True)(txt_embedding)
+        else:
+            txt_lstm = LSTM(256)(txt_embedding)
 
         merged_inp = keras.layers.add([img_embedding, txt_lstm])
         decoder = Dense(256, activation='relu')(merged_inp)
@@ -112,8 +147,9 @@ class NeuralTalk():
 
 
 if __name__ == '__main__':
-    nt = NeuralTalk()
-    nt.train()
+    nt = NeuralTalk(is_TT=True)
+    # nt.train()
+    nt.eval()
 
 
 
