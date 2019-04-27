@@ -23,25 +23,33 @@ from TTLAYERS.TTFC import *
 
 class ValidationCallback(Callback):
 
-    def __init__(self, feats, id_list, idx2word, descriptions):
+    def __init__(self, feats, id_list, idx2word, descriptions, is_TT):
         super(Callback).__init__()
         self.feats = feats
         self.id_list = id_list
         self.idx2word = idx2word
         self.descriptions = descriptions
+        self.is_TT = is_TT
 
     def on_epoch_end(self, epoch, logs=None):
         n_samples = len(self.id_list)
         idx = np.random.randint(n_samples)
         image_id = self.id_list[idx]
-        x1 = self.feats[idx-1:idx]
+        x1 = self.feats[idx:(idx+1)]
         x2 = np.zeros([1, hp.max_len])
         sent = ''
         y_idx = 0
         for i in range(hp.max_len):
             x2[0, i] = y_idx
             y_logit = self.model.predict([x1, x2])
-            y_idx = np.argmax(y_logit)
+            try:
+                y_idx = np.argmax(y_logit)
+            except:
+                print('ERROR: y_logit error!')
+                print('idx:', idx)
+                print('features:', self.feats[idx])
+                print('y_logit:', y_logit)
+                return
             word = self.idx2word[y_idx]
             if word == '<E>':
                 break
@@ -50,15 +58,19 @@ class ValidationCallback(Callback):
         print('image_id:', image_id)
         print('ground truth:', self.descriptions[image_id])
         print('model output:', sent)
-        self.model.save_weights('model_weights.h5')
+        if self.is_TT:
+            self.model.save_weights('model_weights_tt.h5')
+        else:
+            self.model.save_weights('model_weights_base.h5')
         print('INFO: model_weights have been saved.')
 
 
 class NeuralTalk():
     def __init__(self, is_TT=False):
+        self.is_TT = is_TT
         self.word2idx, self.idx2word, self.descriptions = load_vocab()
         self.vocab_size = len(self.word2idx)
-        self.model = self.build_model(self.vocab_size, is_TT)
+        self.model = self.build_model(self.vocab_size, self.is_TT)
         self.model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     def train(self):
@@ -71,14 +83,18 @@ class NeuralTalk():
         for x2 in train_X2_list:
             cnt += len(x2)
         steps_per_epoch = cnt // hp.batch_size
-        callback = ValidationCallback(test_feats, test_id_list, self.idx2word, self.descriptions)
+        callback = ValidationCallback(test_feats, test_id_list, self.idx2word, self.descriptions, self.is_TT)
         self.model.fit_generator(generator=self.generator(X2_list=train_X2_list, vocab_size=self.vocab_size, feats=train_feats),
                             steps_per_epoch=steps_per_epoch,
                             epochs=hp.n_epochs,
+                            verbose=2,
                             callbacks=[callback])
 
     def eval(self):
-        self.model.load_weights('model_weights.h5')
+        if self.is_TT:
+            self.model.load_weights('model_weights_tt.h5')
+        else:
+            self.model.load_weights('model_weights_base.h5')
         test_id_list, test_X2_list = load_data(hp.test_images_file, self.word2idx, self.descriptions)
         test_feats = np.load(hp.test_feats_file)
         sum_score = 0
@@ -149,11 +165,6 @@ class NeuralTalk():
         model = Model(inputs=inputs, outputs=outp)
         return model
 
-
-if __name__ == '__main__':
-    nt = NeuralTalk(is_TT=True)
-    nt.train()
-    # nt.eval()
 
 
 
