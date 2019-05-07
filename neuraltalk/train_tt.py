@@ -8,6 +8,6 @@ from NeuralTalk import NeuralTalk
 
 if __name__ == '__main__':
     nt = NeuralTalk(is_TT=True)
-    nt.train()
+    nt.train(validation=0)
     # nt.eval()
 

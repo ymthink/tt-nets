@@ -9,5 +9,5 @@ from NeuralTalk import NeuralTalk
 
 if __name__ == '__main__':
     nt = NeuralTalk(is_TT=False)
-    nt.train()
+    nt.train(validation=0)
     # nt.eval()
